@@ -130,7 +130,7 @@ Iterations: <span id="iters">0</span>
 <script>
 
 /** This function is copied from stack overflow: http://stackoverflow.com/users/19068/quentin */
-var QueryString = function () {
+QueryString = function () {
   // This function is anonymous, is executed immediately and 
   // the return value is assigned to QueryString!
   var query_string = {};
@@ -182,9 +182,9 @@ var completeSweeps = 0;
 
 var selectedTopic = -1;
 
-var wordTopicCounts = {};
-var topicWordCounts = [];
-var tokensPerTopic = [];
+wordTopicCounts = {};
+topicWordCounts = [];
+tokensPerTopic = [];
 tokensPerTopic.length = numTopics;
 for (var topic = 0; topic < numTopics; topic++) {
   tokensPerTopic[topic] = 0;
@@ -193,7 +193,7 @@ for (var topic = 0; topic < numTopics; topic++) {
 var topicWeights = [];
 topicWeights.length = numTopics;
 
-var documents = [];
+documents = [];
 
 /* SVG functions */
 var w = 650,
@@ -364,6 +364,7 @@ var reorderDocuments = function() {
       .style("display", function(d) { return d.topicCounts[selectedTopic] > 0 ? "block" : "none"; })
       .text(function(d) { return "[" + d.id + "] " + truncate(d.originalText); });
    }
+     d3.selectAll("div.document").append("input").attr("type","button").attr("value","Color by Topic").on("click", function(d) {d3.select(this.parentNode).html(colorByTopic(d))})
 }
 
 var getTopicCorrelations = function() {
@@ -586,6 +587,53 @@ function ready(error, stops, lines) {
 
     vocabTable();
   }
+}
+
+function colorByTopic(inDoc) {
+  colorRamp=d3.scale.linear().domain([0,numTopics * .25,numTopics * .5,numTopics * .75, numTopics]).range(["red", "blue","green","cyan","magenta"])
+  d3.selectAll(".topicWords").style("color", function(d,i) {return colorRamp(i)}).on("mouseover", function(d,i) {topicHover(i)});
+  
+  var documentString = "<p>["+inDoc.id+"]<span>";
+  var documentAsArray = inDoc.originalText.split(' ');
+  var currentToken = 0;
+  var currentTopic = -1;
+  for (x in documentAsArray) {
+    if (documentAsArray[x].toLowerCase().match(XRegExp("\\p{L}[\\p{L}\\p{P}]*\\p{L}", "g")) == inDoc.tokens[currentToken].word) {
+      if (currentTopic == inDoc.tokens[currentToken].topic) {
+        documentString += " " + documentAsArray[x];
+      }
+      else {
+        currentTopic = inDoc.tokens[currentToken].topic;
+        documentString += "</span><span style='font-weight: 900; cursor: pointer; color: "+colorRamp(currentTopic)+";' class='topic" + inDoc.tokens[currentToken].topic + "' onMouseout='topicOut()' onMouseover='topicHover("+inDoc.tokens[currentToken].topic+")'> " + documentAsArray[x];
+      }
+      if (inDoc.tokens[currentToken + 1]) {
+        currentToken ++;
+      }
+    }
+    else {
+      if (currentTopic == -1) {
+        documentString += " " + documentAsArray[x];
+      }
+      else {
+        currentTopic = -1;
+        documentString += "</span><span> " + documentAsArray[x];
+      }
+    }
+  }
+  documentString += "</span></p>"
+  return documentString;
+}
+
+function topicOut() {
+  d3.selectAll("span").style("opacity", 1);
+  d3.selectAll(".topicWords").style("opacity", 1);
+  
+}
+
+function topicHover(topicNumber) {  
+   d3.selectAll(".topicWords").style("opacity", function(d,i) {return i == topicNumber ? 1 : .35});
+  d3.selectAll("span").style("opacity", .35);
+  d3.selectAll(".topic" + topicNumber).style("opacity", 1);
 }
 
 </script>
